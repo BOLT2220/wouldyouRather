@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Would You Rather? 🔥</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ═══════════════════════════════════════
+       CSS VARIABLES & RESET
+    ═══════════════════════════════════════ */
+    :root {
+      --red:         #ff3b3b;
+      --red-dark:    #c01a1a;
+      --red-glow:    rgba(255,59,59,0.45);
+      --blue:        #2979ff;
+      --blue-dark:   #0d47a1;
+      --blue-glow:   rgba(41,121,255,0.45);
+      --bg:          #0e0e14;
+      --surface:     #16161f;
+      --text-light:  #f5f5f5;
+      --text-muted:  rgba(255,255,255,0.45);
+      --font-title:  'Bebas Neue', cursive;
+      --font-body:   'Nunito', sans-serif;
+      --transition:  cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text-light);
+      overflow: hidden;        /* No scrollbar during game */
+    }
+
+    /* ═══════════════════════════════════════
+       LAYOUT SHELL
+    ═══════════════════════════════════════ */
+    .shell {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 0 8px;
+    }
+
+    /* ═══════════════════════════════════════
+       HEADER
+    ═══════════════════════════════════════ */
+    .header {
+      text-align: center;
+      padding: 18px 20px 10px;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 10;
+    }
+
+    .header h1 {
+      font-family: var(--font-title);
+      font-size: clamp(2rem, 6vw, 3.2rem);
+      letter-spacing: 4px;
+      /* Two-tone title: "WOULD YOU" red, "RATHER?" blue */
+      background: linear-gradient(90deg, var(--red) 0%, #ff7a7a 48%, var(--blue) 52%, #6fa8ff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+      filter: drop-shadow(0 0 18px rgba(255,59,59,0.25));
+    }
+
+    .question-counter {
+      margin-top: 6px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .progress-bar {
+      margin: 10px auto 0;
+      width: 200px;
+      height: 3px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--red), var(--blue));
+      border-radius: 3px;
+      transition: width 0.5s ease;
+    }
+
+    /* ═══════════════════════════════════════
+       DIVIDER "OR"
+    ═══════════════════════════════════════ */
+    .or-badge {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: var(--bg);
+      border: 3px solid rgba(255,255,255,0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-title);
+      font-size: 1.1rem;
+      letter-spacing: 1px;
+      color: rgba(255,255,255,0.6);
+      z-index: 20;
+      pointer-events: none;
+      box-shadow: 0 0 0 6px var(--bg);
+      transition: transform 0.4s var(--transition), box-shadow 0.3s;
+    }
+    .or-badge.pop { animation: orPop 0.4s var(--transition); }
+
+    /* ═══════════════════════════════════════
+       CARDS ARENA
+    ═══════════════════════════════════════ */
+    .arena {
+      flex: 1;
+      display: flex;
+      gap: 0;
+      position: relative;
+      padding: 0 16px;
+      min-height: 0;
+    }
+
+    /* Each card is one half */
+    .card {
+      flex: 1;
+      border-radius: 22px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 28px 22px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition:
+        transform 0.25s var(--transition),
+        box-shadow 0.3s ease,
+        flex 0.5s ease;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Red card */
+    .card-a {
+      margin-right: 8px;
+      background: linear-gradient(145deg, #1f0a0a 0%, #2d0d0d 60%, #1a0505 100%);
+      border: 1.5px solid rgba(255,59,59,0.18);
+    }
+    .card-a:hover { transform: scale(1.025); box-shadow: 0 0 40px var(--red-glow), 0 16px 48px rgba(0,0,0,0.5); }
+    .card-a:active { transform: scale(0.97); }
+
+    /* Blue card */
+    .card-b {
+      margin-left: 8px;
+      background: linear-gradient(145deg, #040d1f 0%, #0a1533 60%, #050a1a 100%);
+      border: 1.5px solid rgba(41,121,255,0.18);
+    }
+    .card-b:hover { transform: scale(1.025); box-shadow: 0 0 40px var(--blue-glow), 0 16px 48px rgba(0,0,0,0.5); }
+    .card-b:active { transform: scale(0.97); }
+
+    /* Disabled state after voting */
+    .card.voted   { cursor: default; }
+    .card.voted:hover { transform: none; }
+    .card.chosen  { border-width: 2.5px; }
+    .card-a.chosen { border-color: var(--red); box-shadow: 0 0 48px var(--red-glow); }
+    .card-b.chosen { border-color: var(--blue); box-shadow: 0 0 48px var(--blue-glow); }
+
+    /* Shrink loser card */
+    .arena.revealed .card:not(.chosen) { flex: 0.72; opacity: 0.55; }
+    .arena.revealed .card.chosen       { flex: 1.28; }
+
+    /* Decorative corner glow */
+    .card::before {
+      content: '';
+      position: absolute;
+      border-radius: inherit;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .card-a::before { background: radial-gradient(circle at 30% 30%, rgba(255,59,59,0.18) 0%, transparent 65%); }
+    .card-b::before { background: radial-gradient(circle at 70% 30%, rgba(41,121,255,0.18) 0%, transparent 65%); }
+    .card:hover::before { opacity: 1; }
+
+    /* Emoji */
+    .card-emoji {
+      font-size: clamp(2.6rem, 6vw, 4rem);
+      margin-bottom: 14px;
+      line-height: 1;
+      animation: floatEmoji 3s ease-in-out infinite;
+      display: block;
+    }
+    .card-b .card-emoji { animation-delay: -1.5s; }
+
+    /* Option label (A / B) */
+    .card-label {
+      font-family: var(--font-title);
+      font-size: 0.85rem;
+      letter-spacing: 0.22em;
+      margin-bottom: 10px;
+      opacity: 0.55;
+    }
+    .card-a .card-label { color: var(--red); }
+    .card-b .card-label { color: var(--blue); }
+
+    /* Main text */
+    .card-text {
+      font-size: clamp(1rem, 2.8vw, 1.35rem);
+      font-weight: 800;
+      text-align: center;
+      line-height: 1.35;
+      color: #fff;
+      transition: transform 0.3s ease;
+    }
+
+    /* ── RESULT OVERLAY inside card ── */
+    .card-result {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 0.45s 0.2s ease, transform 0.45s 0.2s ease;
+      pointer-events: none;
+    }
+    .arena.revealed .card-result {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Percentage text */
+    .pct-text {
+      font-family: var(--font-title);
+      font-size: clamp(2rem, 5vw, 3rem);
+      line-height: 1;
+    }
+    .card-a .pct-text { color: var(--red); text-shadow: 0 0 20px var(--red-glow); }
+    .card-b .pct-text { color: var(--blue); text-shadow: 0 0 20px var(--blue-glow); }
+
+    /* Bar inside result */
+    .result-bar {
+      width: 100%;
+      height: 5px;
+      border-radius: 3px;
+      background: rgba(255,255,255,0.1);
+      overflow: hidden;
+    }
+    .result-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      width: 0%;
+      transition: width 0.8s 0.3s ease;
+    }
+    .card-a .result-bar-fill { background: var(--red); }
+    .card-b .result-bar-fill { background: var(--blue); }
+
+    .votes-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    /* Winner crown */
+    .winner-crown {
+      position: absolute;
+      top: -8px;
+      right: 16px;
+      font-size: 1.6rem;
+      opacity: 0;
+      transform: translateY(-6px) rotate(15deg);
+      transition: opacity 0.4s 0.5s ease, transform 0.4s 0.5s ease;
+    }
+    .card.chosen .winner-crown {
+      opacity: 1;
+      transform: translateY(0) rotate(0deg);
+    }
+
+    /* Ripple effect on click */
+    .ripple {
+      position: absolute;
+      border-radius: 50%;
+      transform: scale(0);
+      pointer-events: none;
+      animation: rippleAnim 0.6s ease-out forwards;
+    }
+    .card-a .ripple { background: rgba(255,59,59,0.35); }
+    .card-b .ripple { background: rgba(41,121,255,0.35); }
+
+    /* ═══════════════════════════════════════
+       BOTTOM ACTION ROW
+    ═══════════════════════════════════════ */
+    .action-row {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 20px 6px;
+      gap: 12px;
+      min-height: 54px;
+    }
+
+    .btn-next {
+      padding: 12px 40px;
+      background: linear-gradient(135deg, #1f1f2e, #2a2a40);
+      border: 1.5px solid rgba(255,255,255,0.12);
+      border-radius: 50px;
+      color: #fff;
+      font-family: var(--font-body);
+      font-size: 0.92rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.4s 0.5s ease, transform 0.4s 0.5s ease, background 0.2s, box-shadow 0.2s;
+      pointer-events: none;
+    }
+    .btn-next.visible {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: all;
+    }
+    .btn-next:hover {
+      background: linear-gradient(135deg, #2a2a3e, #363654);
+      box-shadow: 0 6px 24px rgba(0,0,0,0.4);
+    }
+    .btn-next:active { transform: scale(0.96); }
+
+    /* Skip text link */
+    .btn-skip {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      padding: 4px 8px;
+      transition: color 0.2s;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s 0.55s ease, color 0.2s;
+    }
+    .btn-skip.visible { opacity: 1; pointer-events: all; }
+    .btn-skip:hover { color: rgba(255,255,255,0.7); }
+
+    /* ═══════════════════════════════════════
+       AD PLACEHOLDER
+    ═══════════════════════════════════════ */
+    .ad-slot {
+      flex-shrink: 0;
+      margin: 4px 16px 0;
+      height: 56px;
+      background: rgba(255,255,255,0.03);
+      border: 1px dashed rgba(255,255,255,0.1);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: rgba(255,255,255,0.2);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+    .ad-slot::before { content: '▦'; font-size: 1rem; }
+
+    /* ═══════════════════════════════════════
+       GAME OVER SCREEN
+    ═══════════════════════════════════════ */
+    .game-over {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      text-align: center;
+      padding: 30px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.6s ease;
+      z-index: 100;
+    }
+    .game-over.active { opacity: 1; pointer-events: all; }
+
+    .game-over h2 {
+      font-family: var(--font-title);
+      font-size: clamp(2.5rem, 8vw, 4.5rem);
+      letter-spacing: 4px;
+      background: linear-gradient(90deg, var(--red), var(--blue));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .game-over p { color: var(--text-muted); font-size: 1rem; max-width: 320px; line-height: 1.6; }
+
+    .btn-restart {
+      margin-top: 8px;
+      padding: 14px 50px;
+      background: linear-gradient(135deg, var(--red-dark), #8b0000);
+      border: none;
+      border-radius: 50px;
+      color: #fff;
+      font-family: var(--font-body);
+      font-size: 1rem;
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      box-shadow: 0 0 30px var(--red-glow);
+      transition: transform 0.15s, box-shadow 0.2s;
+    }
+    .btn-restart:hover { transform: scale(1.04); box-shadow: 0 0 48px var(--red-glow); }
+    .btn-restart:active { transform: scale(0.97); }
+
+    /* ═══════════════════════════════════════
+       KEYFRAME ANIMATIONS
+    ═══════════════════════════════════════ */
+    @keyframes floatEmoji {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-8px); }
+    }
+
+    @keyframes rippleAnim {
+      from { transform: scale(0); opacity: 1; }
+      to   { transform: scale(4); opacity: 0; }
+    }
+
+    @keyframes orPop {
+      0%   { transform: translate(-50%,-50%) scale(1); }
+      40%  { transform: translate(-50%,-50%) scale(1.35); }
+      100% { transform: translate(-50%,-50%) scale(1); }
+    }
+
+    @keyframes cardEnter {
+      from { opacity: 0; transform: translateY(18px) scale(0.96); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .card { animation: cardEnter 0.5s var(--transition) both; }
+    .card-b { animation-delay: 0.07s; }
+
+    /* ═══════════════════════════════════════
+       RESPONSIVE
+    ═══════════════════════════════════════ */
+    @media (max-width: 540px) {
+      .arena { flex-direction: column; padding: 0 12px; }
+      .card  { flex: 1 !important; }
+      .card-a { margin-right: 0; margin-bottom: 8px; }
+      .card-b { margin-left: 0; }
+      .or-badge { top: 50%; transform: translate(-50%, -50%); }
+      .arena.revealed .card:not(.chosen) { flex: 0.7 !important; }
+      .arena.revealed .card.chosen       { flex: 1.3 !important; }
+      html, body { overflow: auto; }
+    }
+  </style>
+</head>
+
+<body>
+<div class="shell">
+
+  <!-- ── HEADER ── -->
+  <header class="header">
+    <h1>WOULD YOU RATHER?</h1>
+    <div class="question-counter" id="counter">QUESTION 1 OF 10</div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progress" style="width:10%"></div>
+    </div>
+  </header>
+
+  <!-- ── CARDS ARENA ── -->
+  <div class="arena" id="arena">
+
+    <!-- RED CARD – Option A -->
+    <div class="card card-a" id="cardA" role="button" tabindex="0" aria-label="Option A">
+      <span class="winner-crown">👑</span>
+      <span class="card-emoji" id="emojiA">🔥</span>
+      <span class="card-label">OPTION A</span>
+      <p class="card-text" id="textA">Loading...</p>
+      <div class="card-result">
+        <span class="pct-text" id="pctA">0%</span>
+        <div class="result-bar"><div class="result-bar-fill" id="barA"></div></div>
+        <span class="votes-label" id="votesA">0 votes</span>
+      </div>
+    </div>
+
+    <!-- OR DIVIDER -->
+    <div class="or-badge" id="orBadge">OR</div>
+
+    <!-- BLUE CARD – Option B -->
+    <div class="card card-b" id="cardB" role="button" tabindex="0" aria-label="Option B">
+      <span class="winner-crown">👑</span>
+      <span class="card-emoji" id="emojiB">💀</span>
+      <span class="card-label">OPTION B</span>
+      <p class="card-text" id="textB">Loading...</p>
+      <div class="card-result">
+        <span class="pct-text" id="pctB">0%</span>
+        <div class="result-bar"><div class="result-bar-fill" id="barB"></div></div>
+        <span class="votes-label" id="votesB">0 votes</span>
+      </div>
+    </div>
+
+  </div><!-- /arena -->
+
+  <!-- ── BOTTOM ACTIONS ── -->
+  <div class="action-row">
+    <button class="btn-next" id="btnNext">NEXT QUESTION →</button>
+    <button class="btn-skip" id="btnSkip">skip</button>
+  </div>
+
+  <!-- ── AD PLACEHOLDER ── -->
+  <div class="ad-slot">Advertisement · 728×90</div>
+
+</div><!-- /shell -->
+
+<!-- ── GAME OVER SCREEN ── -->
+<div class="game-over" id="gameOver">
+  <div style="font-size:4rem;">🎉</div>
+  <h2>THAT'S A WRAP!</h2>
+  <p>You've answered all 10 questions.<br/>Tough choices were made today.</p>
+  <button class="btn-restart" id="btnRestart">PLAY AGAIN</button>
+</div>
+
+<!-- ════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════ -->
+<script>
+/* ══════════════════════════════════════════════════════════
+   MASTER QUESTION BANK  — 300+ questions
+   Format: { a, b, eA, eB }
+   Each round: 10 are picked randomly (no repeats per session)
+══════════════════════════════════════════════════════════ */
+const ALL_QUESTIONS = [
+  // ── Original 10 ──────────────────────────────────────
+  {a:'Speak in rhymes for the rest of your life',b:'Break into song every time someone says your name',eA:'🎤',eB:'🎶'},
+  {a:'Only eat pizza for every meal forever',b:'Never eat pizza ever again',eA:'🍕',eB:'🚫'},
+  {a:'Have fingers as long as your legs',b:'Have legs as short as your fingers',eA:'🖐️',eB:'🦵'},
+  {a:'Know when you\'re going to die',b:'Know how you\'re going to die',eA:'📅',eB:'💀'},
+  {a:'Always have wet socks',b:'Always have a popcorn kernel stuck in your teeth',eA:'🧦',eB:'🍿'},
+  {a:'Be able to fly but only 2 cm off the ground',b:'Be able to teleport but only 1 meter at a time',eA:'✈️',eB:'⚡'},
+  {a:'Have every dog you see run toward you excitedly',b:'Have every cat you see want to sit on your lap',eA:'🐶',eB:'🐱'},
+  {a:'Live in a world with no music',b:'Live in a world with no movies or TV',eA:'🎵',eB:'🎬'},
+  {a:'Sneeze every time you laugh',b:'Laugh every time you sneeze',eA:'🤧',eB:'😂'},
+  {a:'Be famous for something embarrassing',b:'Be completely forgotten after you die',eA:'😳',eB:'👻'},
+
+  // ── Batch 2 (from Document 1) ─────────────────────────
+  {a:'Have a nose like a vacuum cleaner',b:'Have ears like giant satellite dishes',eA:'👃',eB:'👂'},
+  {a:'Sneeze bubbles every time you are nervous',b:'Hiccup glitter when you are happy',eA:'🫧',eB:'✨'},
+  {a:'Always have sticky fingers',b:'Always have wet socks',eA:'🍯',eB:'🧦'},
+  {a:'Be able to speak to plants',b:'Be able to speak to your Wi-Fi router',eA:'🌿',eB:'📶'},
+  {a:'Have to hop everywhere like a kangaroo',b:'Have to crawl everywhere like a crab',eA:'🦘',eB:'🦀'},
+  {a:'Have a permanent unibrow',b:'Have no eyebrows at all',eA:'👨',eB:'👶'},
+  {a:'Only eat food that is purple',b:'Only eat food that is triangle-shaped',eA:'💜',eB:'🔺'},
+  {a:'Always have a bird perched on your shoulder',b:'Always have a monkey clinging to your leg',eA:'🦜',eB:'🐒'},
+  {a:'Sweat maple syrup',b:'Cry orange juice',eA:'🥞',eB:'🍊'},
+  {a:'Have hands for feet',b:'Have feet for hands',eA:'🙌',eB:'👣'},
+  {a:'Be a giant hamster',b:'Be a tiny elephant',eA:'🐹',eB:'🐘'},
+  {a:'Always talk like a pirate',b:'Always talk like an opera singer',eA:'🏴‍☠️',eB:'🎼'},
+  {a:'Have hair made of spaghetti',b:'Have fingers made of hot dogs',eA:'🍝',eB:'🌭'},
+  {a:'Live in a house made of marshmallows',b:'Live in a house made of LEGO bricks',eA:'🍡',eB:'🧱'},
+  {a:'Only be able to walk backward',b:'Only be able to walk sideways',eA:'🔙',eB:'⬅️'},
+  {a:'Have a 10-second memory',b:'Remember everything including your birth',eA:'🐟',eB:'🧠'},
+  {a:'Always smell like a new car',b:'Always smell like fresh-baked cookies',eA:'🚗',eB:'🍪'},
+  {a:'Have a flying bathtub',b:'Have a submarine shaped like a toaster',eA:'🛀',eB:'🍞'},
+  {a:'Be able to teleport but only to the bathroom',b:'Be able to fly but only at 1 mph',eA:'🚽',eB:'🐢'},
+  {a:'Have a tail that wags when you are excited',b:'Have horns that glow when you are angry',eA:'🐕',eB:'👿'},
+  {a:'Eat a bowl of live worms',b:'Eat a bowl of dry cat food',eA:'🪱',eB:'🐈'},
+  {a:'Always have to wear a clown suit',b:'Always have to wear a full suit of armor',eA:'🤡',eB:'🛡️'},
+  {a:'Have a tongue that is 2 feet long',b:'Have ears that flap when you run',eA:'👅',eB:'🐘'},
+  {a:'Sleep in a giant bird nest',b:'Sleep in a giant fish tank',eA:'🪺',eB:'🧼'},
+  {a:'Be chased by a giant chicken',b:'Be chased by 50 tiny ninjas',eA:'🐔',eB:'🥷'},
+  {a:'Have cheese for teeth',b:'Have jelly for bones',eA:'🧀',eB:'🍇'},
+  {a:'Always have a disco ball over your head',b:'Always have a rain cloud over your head',eA:'🪩',eB:'☁️'},
+  {a:'Commute to school on a giraffe',b:'Commute to school on a giant snail',eA:'🦒',eB:'🐌'},
+  {a:'Have eyes in the back of your head',b:'Have an extra thumb on each hand',eA:'👁️',eB:'👍'},
+  {a:'Only drink melted ice cream',b:'Only drink room-temperature gravy',eA:'🍦',eB:'🥣'},
+  {a:'Your skin changes color based on your mood',b:'You bark like a dog every time you sneeze',eA:'🌈',eB:'🐕'},
+  {a:'Have a pet dinosaur',b:'Have a pet alien',eA:'🦖',eB:'👽'},
+  {a:'Never be able to use a fork again',b:'Never be able to use a spoon again',eA:'🍴',eB:'🥄'},
+  {a:'Always have popcorn stuck in your teeth',b:'Always have a rock in your shoe',eA:'🍿',eB:'👟'},
+  {a:'Be a famous inventor of useless things',b:'Be a terrible singer who is world-famous',eA:'💡',eB:'🎤'},
+  {a:'Have a head shaped like a cube',b:'Have a head shaped like a football',eA:'🧊',eB:'🏈'},
+  {a:'Only communicate using emojis',b:'Only communicate by humming',eA:'💬',eB:'🎶'},
+  {a:'Have a personal theme song that plays out loud',b:'Have a narrator who describes your every move',eA:'🎸',eB:'🎙️'},
+  {a:'Wear wet jeans for the rest of your life',b:'Wear a winter coat in the desert',eA:'👖',eB:'🏜️'},
+  {a:'Be able to breathe underwater',b:'Be able to walk through walls',eA:'🧜',eB:'👻'},
+  {a:'Have a nose that grows when you lie',b:'Have hair that turns neon when you are happy',eA:'🤥',eB:'🌟'},
+  {a:'Eat a sandwich made of grass',b:'Eat a sandwich made of cardboard',eA:'🌱',eB:'📦'},
+  {a:'Live in a world without music',b:'Live in a world without colors',eA:'🔇',eB:'🔳'},
+  {a:'Be able to talk to ghosts',b:'Be able to talk to your future self',eA:'👻',eB:'⌚'},
+  {a:'Have a hand that never stops waving',b:'Have a leg that never stops dancing',eA:'👋',eB:'🕺'},
+  {a:'Always feel like you have to sneeze',b:'Always feel like you forgot something',eA:'👃',eB:'❓'},
+  {a:'Be 3 feet tall',b:'Be 9 feet tall',eA:'🧸',eB:'🦒'},
+  {a:'Have a magic remote that can pause people',b:'Have a magic fridge that never runs out of pizza',eA:'⏸️',eB:'🍕'},
+  {a:'Wear socks with sandals forever',b:'Wear your clothes backward forever',eA:'🩴',eB:'👕'},
+  {a:'Have a pet tiger that thinks it is a cat',b:'Have a pet elephant that thinks it is a dog',eA:'🐯',eB:'🐘'},
+  {a:'Only be able to eat with your hands',b:'Only be able to eat with giant chopsticks',eA:'🖐️',eB:'🥢'},
+  {a:'Everything you touch turns to chocolate',b:'Everything you touch turns to gold',eA:'🍫',eB:'💰'},
+  {a:'Be the first person on Mars',b:'Discover a city at the bottom of the ocean',eA:'🚀',eB:'🔱'},
+  {a:'Have to wear a tutu to every formal event',b:'Have to wear a scuba suit to the grocery store',eA:'🩰',eB:'🤿'},
+  {a:'Always have blue skin',b:'Always have bright green hair',eA:'🫐',eB:'🥦'},
+  {a:'Be able to jump 50 feet in the air',b:'Be able to run 100 mph',eA:'🦘',eB:'🏎️'},
+  {a:'Eat a pizza topped with gummy bears',b:'Eat a taco filled with chocolate',eA:'🍕',eB:'🌮'},
+  {a:'Live in a house made of glass',b:'Live in a house that is underground',eA:'🪟',eB:'🕳️'},
+  {a:'Have a permanent hat you can never take off',b:'Have permanent sunglasses you can never take off',eA:'🎩',eB:'🕶️'},
+  {a:'Be a master of every sport',b:'Be a master of every musical instrument',eA:'⚽',eB:'🎻'},
+  {a:'Always have a loud stomach growl',b:'Always have a loud burp after every word',eA:'🍔',eB:'🗣️'},
+  {a:'Have your face on a billboard',b:'Have your face on a postage stamp',eA:'🏙️',eB:'✉️'},
+  {a:'Only sleep for 2 hours a night',b:'Sleep for 15 hours every single day',eA:'⏰',eB:'💤'},
+  {a:'Have a pet dragon that breathes bubbles',b:'Have a pet unicorn that eats laundry',eA:'🐉',eB:'🦄'},
+  {a:'Always have to rhyme when you speak',b:'Always have to whisper when you tell a joke',eA:'📜',eB:'🤫'},
+  {a:'Be able to control the weather',b:'Be able to control animals',eA:'⛈️',eB:'🦁'},
+  {a:'Lick a frozen pole',b:'Lick a dirty sidewalk',eA:'🧊',eB:'👟'},
+  {a:'Have teeth that glow in the dark',b:'Have eyes that change color like a disco ball',eA:'🦷',eB:'🪩'},
+  {a:'Be forced to say everything you are thinking',b:'Never be able to speak again',eA:'🗣️',eB:'🙊'},
+  {a:'Live in a treehouse in the jungle',b:'Live in a penthouse in a city with no people',eA:'🌳',eB:'🏢'},
+  {a:'Have a magic bag that gives you random snacks',b:'Have a magic wallet that always has 10 dollars',eA:'🍿',eB:'💵'},
+  {a:'Only be able to shower in cold soda',b:'Only be able to wash your hands in syrup',eA:'🥤',eB:'🥞'},
+  {a:'Have a giant rubber duck for a car',b:'Have a giant skateboard for a bed',eA:'🦆',eB:'🛹'},
+  {a:'Be able to grow your hair 10 feet instantly',b:'Be able to change your eye color at will',eA:'💇',eB:'👁️'},
+  {a:'Always have itchy feet',b:'Always have a tickle in your throat',eA:'🦶',eB:'🗣️'},
+  {a:'Be a famous superhero with a lame name',b:'Be a villain with a really cool outfit',eA:'🦸',eB:'🦹'},
+  {a:'Eat a raw onion like an apple',b:'Drink a glass of pickle juice',eA:'🧅',eB:'🥒'},
+  {a:'Have to wear high heels everywhere',b:'Have to wear flippers everywhere',eA:'👠',eB:'🤿'},
+  {a:'Be able to read minds but only of babies',b:'Be able to read minds but only of squirrels',eA:'👶',eB:'🐿️'},
+  {a:'Have a thumb for a nose',b:'Have a nose for a thumb',eA:'👍',eB:'👃'},
+  {a:'Always have a fly buzzing around your ear',b:'Always have a mosquito biting your ankle',eA:'🪰',eB:'🦟'},
+  {a:'Be a master at yo-yoing',b:'Be a master at juggling chainsaws',eA:'🪀',eB:'⚙️'},
+  {a:'Live in a world where everyone is a robot',b:'Live in a world where everyone is a cartoon',eA:'🤖',eB:'🎨'},
+  {a:'Have to shout your name before you eat',b:'Have to do a backflip before you enter a room',eA:'📣',eB:'🤸'},
+  {a:'Only be able to watch one movie forever',b:'Only be able to listen to one song forever',eA:'🎬',eB:'🎵'},
+  {a:'Have a pet penguin that wears a bowtie',b:'Have a pet sloth that wears a tuxedo',eA:'🐧',eB:'🦥'},
+  {a:'Always have purple skin',b:'Always have orange hair',eA:'🟣',eB:'🍊'},
+  {a:'Be able to freeze water with your touch',b:'Be able to heat things up with your stare',eA:'❄️',eB:'🔥'},
+  {a:'Eat a cake made of meat',b:'Eat a steak made of cake',eA:'🎂',eB:'🥩'},
+  {a:'Have to sleep standing up',b:'Have to eat lying down',eA:'🧍',eB:'🛌'},
+  {a:'Be a famous chef who only cooks with cereal',b:'Be a famous dancer who only dances to silence',eA:'🥣',eB:'💃'},
+  {a:'Have a giant clock for a face',b:'Have a giant compass for a stomach',eA:'⏰',eB:'🧭'},
+  {a:'Only drink water from a spray bottle',b:'Only eat food from a blender',eA:'🔫',eB:'🌪️'},
+  {a:'Be able to turn into a cat for 1 hour a day',b:'Be able to turn into a dog for 1 hour a day',eA:'🐈',eB:'🐕'},
+  {a:'Always have a dry mouth',b:'Always have sweaty palms',eA:'🌵',eB:'🤲'},
+  {a:'Have a giant button on your chest that says RESET',b:'Have a giant lightbulb on your head that glows when you have an idea',eA:'🔘',eB:'💡'},
+  {a:'Be the world champion at hide and seek',b:'Be the world champion at tag',eA:'🫣',eB:'🏃'},
+  {a:'Only be able to wear clothes made of paper',b:'Only be able to wear clothes made of balloons',eA:'📄',eB:'🎈'},
+  {a:'Have a magic broom that cleans for you',b:'Have a magic spoon that makes everything taste like candy',eA:'🧹',eB:'🍭'},
+
+  // ── Batch 3 (from Document 2) ─────────────────────────
+  {a:'Have spaghetti hair forever',b:'Sweat ketchup',eA:'🍝',eB:'🍅'},
+  {a:'Fight 1 horse-sized duck',b:'Fight 100 duck-sized horses',eA:'🦆',eB:'🐎'},
+  {a:'Always speak in rhymes',b:'Only communicate with memes',eA:'🎤',eB:'📱'},
+  {a:'Have permanent hiccups',b:'Have permanent sneezes',eA:'😵',eB:'🤧'},
+  {a:'Eat only spicy food',b:'Eat only bland food',eA:'🌶️',eB:'🍞'},
+  {a:'Be invisible but only when nobody is looking',b:'Fly but only 1 meter above ground',eA:'👻',eB:'🪶'},
+  {a:'Talk to animals but they insult you',b:'Understand all languages but can\'t speak',eA:'🐶',eB:'🌍'},
+  {a:'Have a rewind button for life',b:'Have a pause button for life',eA:'⏪',eB:'⏸️'},
+  {a:'Smell like onions forever',b:'Sound like a goat when laughing',eA:'🧅',eB:'🐐'},
+  {a:'Be stuck in a game',b:'Be stuck in a movie',eA:'🎮',eB:'🎥'},
+  {a:'Only walk backwards',b:'Only talk backwards',eA:'🔙',eB:'🔄'},
+  {a:'Have a giant nose',b:'Have giant ears',eA:'👃',eB:'👂'},
+  {a:'Be chased by bees once a week',b:'Be chased by dogs once a month',eA:'🐝',eB:'🐕'},
+  {a:'Eat ice cream that tastes like pizza',b:'Eat pizza that tastes like ice cream',eA:'🍦',eB:'🍕'},
+  {a:'Never use internet again',b:'Never watch TV again',eA:'🌐',eB:'📺'},
+  {a:'Have glowing eyes',b:'Have glowing hair',eA:'👀',eB:'💡'},
+  {a:'Be super fast but trip often',b:'Be super strong but clumsy',eA:'⚡',eB:'💪'},
+  {a:'Always feel cold',b:'Always feel hot',eA:'❄️',eB:'🔥'},
+  {a:'Live underwater',b:'Live in space',eA:'🌊',eB:'🚀'},
+  {a:'Have no eyebrows',b:'Have only one eyebrow',eA:'😶',eB:'🤨'},
+  {a:'Eat bugs for snacks',b:'Drink pickle juice daily',eA:'🐛',eB:'🥒'},
+  {a:'Be famous but hated',b:'Be unknown but loved',eA:'⭐',eB:'❤️'},
+  {a:'Have robot arms',b:'Have robot legs',eA:'🤖',eB:'🦿'},
+  {a:'Only whisper forever',b:'Only shout forever',eA:'🤫',eB:'📢'},
+  {a:'Be stuck in rain forever',b:'Be stuck in snow forever',eA:'🌧️',eB:'❄️'},
+  {a:'Have a pet dragon',b:'Have a pet dinosaur',eA:'🐉',eB:'🦖'},
+  {a:'Be able to teleport randomly',b:'Be able to time travel randomly',eA:'🌀',eB:'⏳'},
+  {a:'Never sleep',b:'Sleep 16 hours daily',eA:'😳',eB:'😴'},
+  {a:'Have candy rain',b:'Have pizza rain',eA:'🍬',eB:'🍕'},
+  {a:'Have a tail',b:'Have horns',eA:'🐒',eB:'😈'},
+  {a:'Be a superhero with useless power',b:'Be a villain with amazing power',eA:'🦸',eB:'🦹'},
+  {a:'Always wear wet socks',b:'Always have something in your eye',eA:'🧦',eB:'👁️'},
+  {a:'Live without friends',b:'Live without family',eA:'👤',eB:'🏠'},
+  {a:'Eat only sweet',b:'Eat only salty',eA:'🍩',eB:'🧂'},
+  {a:'Have a rewind life button but lose memory',b:'Have no rewind but perfect memory',eA:'🔄',eB:'🧠'},
+  {a:'Be able to read minds',b:'Be able to become invisible',eA:'🧠',eB:'👻'},
+  {a:'Be stuck in a horror game',b:'Be stuck in a comedy show',eA:'😱',eB:'😂'},
+  {a:'Have permanent bedhead',b:'Have permanent bad breath',eA:'🛌',eB:'😷'},
+  {a:'Always be late',b:'Always be too early',eA:'⏰',eB:'⌛'},
+  {a:'Be chased by zombies',b:'Be chased by aliens',eA:'🧟',eB:'👽'},
+  {a:'Have unlimited snacks',b:'Have unlimited drinks',eA:'🍿',eB:'🥤'},
+  {a:'Be rich but bored',b:'Be poor but happy',eA:'💰',eB:'😊'},
+  {a:'Lose your phone',b:'Lose your wallet',eA:'📱',eB:'👛'},
+  {a:'Only eat cold food',b:'Only eat hot food',eA:'🧊',eB:'🔥'},
+  {a:'Be a giant',b:'Be tiny',eA:'🗿',eB:'🐜'},
+  {a:'Live in jungle',b:'Live in desert',eA:'🌴',eB:'🏜️'},
+  {a:'Have wings but can\'t fly',b:'Fly but with no wings',eA:'🪽',eB:'🕊️'},
+  {a:'Be stuck in school forever',b:'Never learn anything again',eA:'🏫',eB:'📚'},
+  {a:'Have super hearing',b:'Have super vision',eA:'👂',eB:'👁️'},
+  {a:'Be allergic to chocolate',b:'Be allergic to pizza',eA:'🍫',eB:'🍕'},
+  {a:'Talk to ghosts',b:'See the future',eA:'👻',eB:'🔮'},
+  {a:'Have a clone',b:'Be a clone',eA:'👯',eB:'🧬'},
+  {a:'Live in past',b:'Live in future',eA:'🏺',eB:'🤖'},
+  {a:'Always laugh at serious moments',b:'Cry at happy moments',eA:'😂',eB:'😭'},
+  {a:'Eat raw onion daily',b:'Drink spoiled milk weekly',eA:'🧅',eB:'🥛'},
+  {a:'Be always online',b:'Be never online',eA:'🌐',eB:'📴'},
+  {a:'Have a talking pet',b:'Be able to talk to plants',eA:'🐕',eB:'🌱'},
+  {a:'Only walk on hands',b:'Only crawl',eA:'🤸',eB:'🐍'},
+  {a:'Have 3 arms',b:'Have 3 legs',eA:'🦾',eB:'🦿'},
+  {a:'Be stuck in elevator',b:'Be stuck in traffic',eA:'🛗',eB:'🚗'},
+  {a:'Eat only fast food',b:'Eat only vegetables',eA:'🍔',eB:'🥦'},
+  {a:'Have permanent clown makeup',b:'Have permanent zombie makeup',eA:'🤡',eB:'🧟'},
+  {a:'Win lottery but lose friends',b:'Keep friends but stay average',eA:'💸',eB:'👥'},
+  {a:'Be a genius but lonely',b:'Be average but popular',eA:'🧠',eB:'🎉'},
+  {a:'Have unlimited time',b:'Have unlimited money',eA:'⏳',eB:'💵'},
+  {a:'Be trapped in dream',b:'Never dream again',eA:'💭',eB:'🌙'},
+  {a:'Be super lucky',b:'Be super smart',eA:'🍀',eB:'📚'},
+  {a:'Have a magic wand',b:'Have a magic book',eA:'🪄',eB:'📖'},
+  {a:'Be able to control weather',b:'Control minds',eA:'🌦️',eB:'🧠'},
+  {a:'Have infinite energy',b:'Never feel pain',eA:'⚡',eB:'🛡️'},
+  {a:'Only eat breakfast foods',b:'Only eat dinner foods',eA:'🥞',eB:'🍛'},
+  {a:'Have a robotic voice',b:'Have a squeaky voice',eA:'🤖',eB:'🐭'},
+  {a:'Live in video game',b:'Live in anime',eA:'🎮',eB:'🎌'},
+  {a:'Be chased by teacher',b:'Be chased by principal',eA:'🏫',eB:'📋'},
+  {a:'Never use emojis',b:'Only use emojis',eA:'🚫',eB:'😂'},
+  {a:'Have sticky hands',b:'Have slippery feet',eA:'🖐️',eB:'🦶'},
+  {a:'Be able to shrink',b:'Be able to grow giant',eA:'🔽',eB:'🔼'},
+  {a:'Eat soap once',b:'Drink vinegar daily',eA:'🧼',eB:'🥴'},
+  {a:'Be invisible in class',b:'Be loudest in class',eA:'👻',eB:'📢'},
+  {a:'Have a time machine',b:'Have teleport machine',eA:'⏳',eB:'🌀'},
+  {a:'Live without phone',b:'Live without friends',eA:'📵',eB:'👤'},
+  {a:'Be always hungry',b:'Never feel hungry',eA:'🍽️',eB:'🚫'},
+  {a:'Have glowing skin',b:'Have glowing teeth',eA:'✨',eB:'😁'},
+  {a:'Have a pet tiger',b:'Have a pet shark',eA:'🐅',eB:'🦈'},
+  {a:'Only whisper secrets',b:'Shout everything',eA:'🤫',eB:'📢'},
+  {a:'Be a wizard',b:'Be a ninja',eA:'🧙',eB:'🥷'},
+  {a:'Have a spaceship',b:'Have a submarine',eA:'🚀',eB:'🚢'},
+  {a:'Be stuck in loop day',b:'Skip random days',eA:'🔁',eB:'📅'},
+  {a:'Have infinite games',b:'Have infinite snacks',eA:'🎮',eB:'🍿'},
+  {a:'Be feared by all',b:'Be loved by all',eA:'😈',eB:'❤️'},
+  {a:'Lose all memories',b:'Relive same memory forever',eA:'🧠',eB:'🔁'},
+  {a:'Have cold showers forever',b:'Hot showers but 10 sec only',eA:'🚿',eB:'🔥'},
+
+  // ── Batch 4 (from Document 3) ─────────────────────────
+  {a:'Have eyes that zoom like a camera',b:'Have ears that hear thoughts as whispers',eA:'📷',eB:'👂'},
+  {a:'Every step you take makes a squeak sound',b:'Every blink makes a camera flash',eA:'🐭',eB:'📸'},
+  {a:'Only be able to sit, never lie down',b:'Only lie down, never sit',eA:'🪑',eB:'🛌'},
+  {a:'Have spaghetti instead of bones',b:'Have jelly instead of muscles',eA:'🍝',eB:'🍮'},
+  {a:'Be followed by dramatic background music',b:'Have a laugh track play after everything you say',eA:'🎼',eB:'😂'},
+  {a:'Only eat food shaped like cubes',b:'Only eat food that melts instantly',eA:'🧊',eB:'🫠'},
+  {a:'Be able to breathe underwater but smell like fish',b:'Fly but sneeze every 5 seconds',eA:'🐟',eB:'🤧'},
+  {a:'Have a shadow that moves differently from you',b:'Have reflections that wink at you',eA:'🌑',eB:'🪞'},
+  {a:'Be stuck with 1% battery always',b:'Have full battery but no internet ever',eA:'🔋',eB:'📵'},
+  {a:'Your voice echoes forever',b:'Your words appear as subtitles in air',eA:'📢',eB:'💬'},
+  {a:'Be able to talk only in questions',b:'Be able to talk only in song lyrics',eA:'❓',eB:'🎶'},
+  {a:'Have hands that change color with mood',b:'Have hair that changes length randomly',eA:'🌈',eB:'✂️'},
+  {a:'Every door you open leads to a random place',b:'Every road you take loops back',eA:'🚪',eB:'🔁'},
+  {a:'Be chased by a slow snail forever',b:'Be chased by a fast chicken once a day',eA:'🐌',eB:'🐔'},
+  {a:'Have a personal theme song others hear',b:'See people\'s stats like a game UI',eA:'🎧',eB:'📊'},
+  {a:'Only be awake at night',b:'Only be awake in daytime',eA:'🌙',eB:'☀️'},
+  {a:'Have a fridge that screams when opened',b:'Have a bed that runs away at night',eA:'🧊',eB:'🛏️'},
+  {a:'Every lie makes your nose glow',b:'Every truth makes your ears ring loudly',eA:'✨',eB:'🔔'},
+  {a:'Have invisible clothes',b:'Have clothes that shout your thoughts',eA:'👕',eB:'📣'},
+  {a:'Be able to pause time but freeze too',b:'Fast forward time but age double',eA:'⏸️',eB:'⏩'},
+  {a:'Have a pet cloud',b:'Have a pet lightning bolt',eA:'☁️',eB:'⚡'},
+  {a:'Every joke you say becomes real',b:'Every dream you have becomes real',eA:'🤣',eB:'💭'},
+  {a:'Only drink sparkling water forever',b:'Only drink warm milk forever',eA:'🥤',eB:'🥛'},
+  {a:'Have shoes that stick to ceilings',b:'Have shoes that bounce like trampolines',eA:'👟',eB:'🤸'},
+  {a:'Be invisible but smell like garlic',b:'Be visible but completely silent',eA:'🧄',eB:'🤫'},
+  {a:'Only be able to eat with chopsticks',b:'Only be able to drink with a spoon',eA:'🥢',eB:'🥄'},
+  {a:'Have a door in your room to another world',b:'Have a button that deletes one memory daily',eA:'🌌',eB:'🧠'},
+  {a:'Your footsteps leave glitter',b:'Your shadow leaves footprints',eA:'✨',eB:'👣'},
+  {a:'Have permanent slow-motion vision',b:'Have super speed vision but dizzy',eA:'🐢',eB:'⚡'},
+  {a:'Only sleep 3 hours but feel fine',b:'Sleep 12 hours but still tired',eA:'😵',eB:'😴'},
+  {a:'Be able to summon snacks instantly',b:'Be able to summon any gadget instantly',eA:'🍟',eB:'📱'},
+  {a:'Have a nose that detects lies',b:'Have ears that detect sarcasm',eA:'👃',eB:'👂'},
+  {a:'Be stuck in a cartoon world',b:'Be stuck in black and white world',eA:'🎨',eB:'⚫'},
+  {a:'Have a backpack that eats items',b:'Have pockets that randomly duplicate items',eA:'🎒',eB:'🧳'},
+  {a:'Every photo you take comes alive',b:'Every drawing you make talks',eA:'📸',eB:'✏️'},
+  {a:'Only run everywhere',b:'Only crawl everywhere',eA:'🏃',eB:'🐍'},
+  {a:'Have a voice that changes pitch randomly',b:'Have echo delay in real life speech',eA:'🎤',eB:'🔊'},
+  {a:'Have a hat that predicts weather',b:'Have shoes that predict danger',eA:'🎩',eB:'👟'},
+  {a:'Be able to taste colors',b:'Be able to hear smells',eA:'🎨',eB:'👃'},
+  {a:'Every time you blink teleport 1 step',b:'Every time you sneeze teleport randomly',eA:'👁️',eB:'🤧'},
+  {a:'Be able to clone food only',b:'Be able to clone yourself but tired',eA:'🍔',eB:'👯'},
+  {a:'Have a mirror that shows future you',b:'Have a mirror that shows past you',eA:'🪞',eB:'⏳'},
+  {a:'Be immune to embarrassment',b:'Feel double embarrassment always',eA:'😎',eB:'😳'},
+  {a:'Only eat crunchy food',b:'Only eat liquid food',eA:'🍪',eB:'🥤'},
+  {a:'Have a robot teacher',b:'Have an alien teacher',eA:'🤖',eB:'👽'},
+  {a:'Be able to rewind conversations',b:'Skip awkward moments instantly',eA:'⏪',eB:'⏭️'},
+  {a:'Have permanent background rain sound',b:'Have permanent wind noise',eA:'🌧️',eB:'🌬️'},
+  {a:'Be able to jump super high once daily',b:'Run super fast for 10 seconds daily',eA:'🦘',eB:'⚡'},
+  {a:'Have glowing footsteps at night',b:'Have glowing eyes in dark',eA:'✨',eB:'👀'},
+  {a:'Every time you sit chair breaks',b:'Every time you stand floor squeaks',eA:'🪑',eB:'🔊'},
+  {a:'Be able to eat endlessly without gaining weight',b:'Gain muscle instantly from food',eA:'🍩',eB:'💪'},
+  {a:'Have a smartwatch that predicts luck',b:'Have glasses that show secrets',eA:'⌚',eB:'👓'},
+  {a:'Be followed by a floating emoji',b:'Have emojis appear above head',eA:'😂',eB:'💭'},
+  {a:'Only drink sour drinks',b:'Only drink super sweet drinks',eA:'🍋',eB:'🍭'},
+  {a:'Have a bed that floats',b:'Have a chair that flies',eA:'🛏️',eB:'🪑'},
+  {a:'Be stuck with cartoon physics',b:'Be stuck with video game physics',eA:'🎭',eB:'🎮'},
+  {a:'Have a pen that writes future',b:'Have an eraser that deletes past',eA:'✍️',eB:'🧽'},
+  {a:'Be able to see invisible things',b:'Be invisible to technology only',eA:'👻',eB:'📡'},
+  {a:'Have a talking alarm clock',b:'Have a running alarm clock',eA:'⏰',eB:'🏃'},
+  {a:'Every time you eat you glow',b:'Every time you drink you sparkle',eA:'✨',eB:'💫'},
+  {a:'Have shoes that stick to walls',b:'Have gloves that climb anything',eA:'👟',eB:'🧤'},
+  {a:'Be able to smell emotions',b:'Be able to see sounds',eA:'👃',eB:'🎶'},
+  {a:'Have random superpower daily',b:'Have one weak power forever',eA:'🎲',eB:'🪶'},
+  {a:'Be able to store dreams',b:'Replay dreams anytime',eA:'💭',eB:'🎥'},
+  {a:'Have a door to your past self',b:'Have a door to your future self',eA:'🚪',eB:'⏳'},
+  {a:'Have permanent confetti falling',b:'Have permanent bubbles around',eA:'🎉',eB:'🫧'},
+  {a:'Only wear pajamas forever',b:'Only wear formal clothes forever',eA:'🛌',eB:'🤵'},
+  {a:'Have a keyboard that types thoughts',b:'Have a mic that records thoughts',eA:'⌨️',eB:'🎤'},
+  {a:'Be able to freeze objects',b:'Be able to melt objects',eA:'🧊',eB:'🔥'},
+  {a:'Have a hat that reads minds',b:'Have shoes that guide path',eA:'🎩',eB:'👟'},
+  {a:'Be stuck in slow internet',b:'Be stuck in laggy life',eA:'🐌',eB:'🎮'},
+  {a:'Have eyes that show stats',b:'Have hands that show future',eA:'📊',eB:'✋'},
+  {a:'Only eat glowing food',b:'Only eat invisible food',eA:'✨',eB:'👻'},
+  {a:'Be able to talk to shadows',b:'Be able to control reflections',eA:'🌑',eB:'🪞'},
+  {a:'Have a pen that never stops',b:'Have paper that never ends',eA:'✒️',eB:'📜'},
+  {a:'Be able to pause gravity',b:'Be able to reverse gravity',eA:'🪂',eB:'🔄'},
+  {a:'Have music play with mood',b:'Have lights change with mood',eA:'🎶',eB:'💡'},
+  {a:'Be able to summon rain',b:'Be able to summon wind',eA:'🌧️',eB:'🌬️'},
+  {a:'Have a phone that predicts future',b:'Have a watch that rewinds time',eA:'📱',eB:'⌚'},
+  {a:'Be stuck with glowing skin at night',b:'Be invisible in daylight',eA:'✨',eB:'☀️'},
+  {a:'Have a mirror that lies',b:'Have a mirror that tells truth',eA:'🪞',eB:'😬'},
+  {a:'Be able to copy any skill for 1 hour',b:'Have one skill maxed forever',eA:'📋',eB:'🏆'},
+  {a:'Have infinite notebooks',b:'Have infinite ideas',eA:'📒',eB:'💡'},
+  {a:'Be able to pause hunger',b:'Be able to pause sleep',eA:'🍽️',eB:'😴'},
+  {a:'Have a backpack portal',b:'Have a pocket dimension',eA:'🎒',eB:'🌌'},
+  {a:'Be able to summon clones temporarily',b:'Swap places with clones instantly',eA:'👯',eB:'🔄'},
+  {a:'Have permanent echo footsteps',b:'Have permanent glowing trail',eA:'👣',eB:'✨'},
+  {a:'Only eat floating food',b:'Only eat invisible food',eA:'🫧',eB:'👻'},
+  {a:'Have a compass that shows luck',b:'Have a map that shows danger',eA:'🧭',eB:'🗺️'},
+  {a:'Be able to stretch like rubber',b:'Be hard like stone',eA:'🧘',eB:'🪨'},
+  {a:'Have a talking backpack',b:'Have silent but smart shoes',eA:'🎒',eB:'👟'},
+  {a:'Be able to turn into smoke',b:'Be able to turn into water',eA:'💨',eB:'💧'},
+  {a:'Have a button that skips boredom',b:'Have a button that skips pain',eA:'⏭️',eB:'🛑'},
+  {a:'Be able to hear future sounds',b:'See past visuals anytime',eA:'🔊',eB:'🎥'}
+];
+
+/* ══════════════════════════════════════════════════════════
+   GAME CONFIG
+══════════════════════════════════════════════════════════ */
+const QUESTIONS_PER_ROUND = 10;  // Change this to play more/fewer per round
+
+/* ══════════════════════════════════════════════════════════
+   SHUFFLE UTILITY — Fisher-Yates
+══════════════════════════════════════════════════════════ */
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/* Pick N random unique questions for this round */
+function pickRound() {
+  return shuffle(ALL_QUESTIONS).slice(0, QUESTIONS_PER_ROUND);
+}
+
+/* ══════════════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════════════ */
+let QUESTIONS    = pickRound();   // Active round questions
+let currentIndex = 0;
+let voted        = false;
+
+/* ══════════════════════════════════════════════════════════
+   DOM REFERENCES
+══════════════════════════════════════════════════════════ */
+const arena      = document.getElementById('arena');
+const cardA      = document.getElementById('cardA');
+const cardB      = document.getElementById('cardB');
+const textA      = document.getElementById('textA');
+const textB      = document.getElementById('textB');
+const emojiA     = document.getElementById('emojiA');
+const emojiB     = document.getElementById('emojiB');
+const pctA       = document.getElementById('pctA');
+const pctB       = document.getElementById('pctB');
+const barA       = document.getElementById('barA');
+const barB       = document.getElementById('barB');
+const votesA     = document.getElementById('votesA');
+const votesB     = document.getElementById('votesB');
+const counter    = document.getElementById('counter');
+const progress   = document.getElementById('progress');
+const btnNext    = document.getElementById('btnNext');
+const btnSkip    = document.getElementById('btnSkip');
+const orBadge    = document.getElementById('orBadge');
+const gameOver   = document.getElementById('gameOver');
+const btnRestart = document.getElementById('btnRestart');
+
+/* ══════════════════════════════════════════════════════════
+   LOAD QUESTION
+══════════════════════════════════════════════════════════ */
+function loadQuestion() {
+  const q = QUESTIONS[currentIndex];
+  voted = false;
+
+  // Map compact keys → display fields
+  textA.textContent  = q.a  || q.textA;
+  textB.textContent  = q.b  || q.textB;
+  emojiA.textContent = q.eA || q.emojiA || '🔥';
+  emojiB.textContent = q.eB || q.emojiB || '💀';
+
+  counter.textContent  = `QUESTION ${currentIndex + 1} OF ${QUESTIONS.length}`;
+  progress.style.width = `${((currentIndex + 1) / QUESTIONS.length) * 100}%`;
+
+  pctA.textContent = '0%';
+  pctB.textContent = '0%';
+  barA.style.width = '0%';
+  barB.style.width = '0%';
+  votesA.textContent = '';
+  votesB.textContent = '';
+
+  cardA.classList.remove('voted','chosen');
+  cardB.classList.remove('voted','chosen');
+  arena.classList.remove('revealed');
+  btnNext.classList.remove('visible');
+  btnSkip.classList.remove('visible');
+
+  // Re-trigger entry animation
+  [cardA, cardB].forEach(c => {
+    c.style.animation = 'none';
+    void c.offsetWidth;
+    c.style.animation = '';
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
+   HANDLE VOTE
+══════════════════════════════════════════════════════════ */
+function handleVote(choice) {
+  if (voted) return;
+  voted = true;
+
+  const isA        = choice === 'A';
+  const chosen     = isA ? cardA : cardB;
+  const rejected   = isA ? cardB : cardA;
+
+  spawnRipple(chosen);
+
+  orBadge.classList.remove('pop');
+  void orBadge.offsetWidth;
+  orBadge.classList.add('pop');
+
+  chosen.classList.add('voted','chosen');
+  rejected.classList.add('voted');
+
+  // Random-ish percentages (35–65 range for realism)
+  const pA = 35 + Math.floor(Math.random() * 31);
+  const pB = 100 - pA;
+
+  const total  = Math.floor(Math.random() * 5000) + 7000;
+  const countA = Math.round(total * pA / 100);
+  const countB = total - countA;
+
+  pctA.textContent   = `${pA}%`;
+  pctB.textContent   = `${pB}%`;
+  votesA.textContent = `${countA.toLocaleString()} votes`;
+  votesB.textContent = `${countB.toLocaleString()} votes`;
+
+  arena.classList.add('revealed');
+
+  setTimeout(() => {
+    barA.style.width = `${pA}%`;
+    barB.style.width = `${pB}%`;
+  }, 80);
+
+  btnNext.classList.add('visible');
+  btnSkip.classList.add('visible');
+}
+
+/* ══════════════════════════════════════════════════════════
+   NEXT / SKIP / RESTART
+══════════════════════════════════════════════════════════ */
+function nextQuestion() {
+  currentIndex++;
+  if (currentIndex >= QUESTIONS.length) {
+    showGameOver();
+  } else {
+    loadQuestion();
+  }
+}
+
+function showGameOver() {
+  gameOver.classList.add('active');
+}
+
+btnNext.addEventListener('click', nextQuestion);
+btnSkip.addEventListener('click', nextQuestion);
+
+btnRestart.addEventListener('click', () => {
+  // Fresh random round every restart — no repeats from last game!
+  QUESTIONS    = pickRound();
+  currentIndex = 0;
+  gameOver.classList.remove('active');
+  loadQuestion();
+});
+
+/* ══════════════════════════════════════════════════════════
+   CARD CLICK + KEYBOARD
+══════════════════════════════════════════════════════════ */
+cardA.addEventListener('click',   () => handleVote('A'));
+cardB.addEventListener('click',   () => handleVote('B'));
+cardA.addEventListener('keydown', e => { if (e.key==='Enter'||e.key===' ') handleVote('A'); });
+cardB.addEventListener('keydown', e => { if (e.key==='Enter'||e.key===' ') handleVote('B'); });
+
+/* ══════════════════════════════════════════════════════════
+   RIPPLE HELPER
+══════════════════════════════════════════════════════════ */
+function spawnRipple(card) {
+  const ripple = document.createElement('div');
+  ripple.classList.add('ripple');
+  const size = Math.max(card.offsetWidth, card.offsetHeight) * 1.8;
+  ripple.style.cssText = `
+    width:${size}px; height:${size}px;
+    left:${card.offsetWidth/2 - size/2}px;
+    top:${card.offsetHeight/2 - size/2}px;
+  `;
+  card.appendChild(ripple);
+  setTimeout(() => ripple.remove(), 650);
+}
+
+/* ══════════════════════════════════════════════════════════
+   START
+   Total pool: ${ALL_QUESTIONS.length}+ questions
+   Each game:  ${QUESTIONS_PER_ROUND} random, never the same twice per session
+══════════════════════════════════════════════════════════ */
+loadQuestion();
+</script>
+
+</body>
+</html>
